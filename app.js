@@ -183,6 +183,24 @@ function navItem(href, label, sub, state, num){
   if(location.hash.slice(1)===href || (!location.hash && href==='start')) a.setAttribute('aria-current','page');
   return a;
 }
+// Teacher tools need a password. Only its SHA-256 hash lives here; unlock lasts until the page reloads.
+const TEACHER_HASH = '931c00a8beb5b64b6a8e08673496f5b820810517e6a8b166fc34b2d014e5ba2b';
+let teacherOK = false;
+async function sha256(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function teacherLogin(d){
+  const f = el('form', 'row');
+  const pw = el('input'); pw.type = 'password'; pw.autocomplete = 'off'; pw.setAttribute('aria-label', tx(['Teacher password','Contraseña de maestro'])); pw.placeholder = tx(['Password','Contraseña']);
+  const go = el('button', 'btn', tx(['Enter','Entrar'])); go.type = 'submit';
+  const msg = el('p', 'small'); msg.setAttribute('role','status');
+  f.addEventListener('submit', async e=>{
+    e.preventDefault();
+    let ok = false; try{ ok = (await sha256(pw.value)) === TEACHER_HASH; }catch(err){}
+    if(ok){ teacherOK = true; renderRail(); const t = $('#rail .teacher'); if(t) t.open = true; }
+    else { msg.textContent = tx(['Wrong password.','Contraseña incorrecta.']); pw.value = ''; pw.focus(); }
+  });
+  f.appendChild(pw); f.appendChild(go);
+  const w = el('div'); w.appendChild(f); w.appendChild(msg); return w;
+}
 function renderRail(){
   const r = $('#rail'); r.innerHTML = '';
   r.appendChild(el('h4', null, tx(['Training','Entrenamiento'])));
@@ -195,6 +213,7 @@ function renderRail(){
   r.appendChild(el('h4', null, tx(['Finish','Final'])));
   r.appendChild(navItem('exit', tx(['Exit ticket','Boleto de salida']), tx(['3 sentences','3 oraciones']), P.exit.done?'done':(arcadeOpen()?'open':'locked'), '✎'));
   const d = el('details', 'teacher'); d.appendChild(el('summary', null, tx(['For teachers','Para maestros'])));
+  if(!teacherOK){ d.appendChild(teacherLogin(d)); r.appendChild(d); return; }
   const row = el('div', 'row');
   const u = el('button', 'btn', P.unlockAll ? tx(['Lock order again','Volver a bloquear']) : tx(['Unlock everything','Desbloquear todo'])); u.type='button';
   u.addEventListener('click', ()=>{ P.unlockAll = !P.unlockAll; save(); renderRail(); route(); });
