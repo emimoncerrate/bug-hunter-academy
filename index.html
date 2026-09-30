@@ -98,9 +98,18 @@ table.t th,table.t td{border-bottom:1px solid var(--line); padding:8px 10px; tex
 table.t th{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
 .tablewrap{overflow-x:auto}
 .vocab{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px}
-.vocab div{background:var(--panel-2); border-radius:12px; padding:10px 14px}
+.vocab > div{background:var(--panel-2); border-radius:12px; padding:10px 14px}
 .vocab b{font-family:var(--f-display); font-size:17px; display:block}
 .vocab i{color:var(--muted); font-size:14px}
+.bpic{background:var(--ed); border-radius:10px; padding:6px 8px; overflow-x:auto; display:flex; flex-direction:column; align-self:flex-start; width:fit-content; max-width:100%; box-sizing:border-box}
+.bpic .ln{cursor:default}
+.bpic .guide{margin-left:8px; width:18px}
+.bpic .blk{font-size:13.5px; min-height:32px; padding:4px 10px}
+.point .bpic{margin-top:4px}
+td .bpic{margin-top:6px}
+.bpic.big{padding:10px 12px}
+.bpic.big .blk{font-size:16px; min-height:40px}
+.pic-label{font-size:13px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--muted); margin-top:6px}
 svg.fig{width:100%; height:auto; display:block; max-width:760px}
 .shot{border-radius:14px; overflow:hidden; border:1px solid var(--line); max-width:900px; background:#F7F7F7}
 .shot svg.fig{max-width:none}
@@ -233,6 +242,8 @@ input.slot:focus,select.slot:focus{outline:3px solid #FFE066; outline-offset:0}
 .step-card .frame{font-size:19px}
 .big-opts{flex-direction:column; align-items:stretch; max-width:560px}
 .big-opts .opt{font-size:18px; padding:12px 18px}
+.next-part{margin-top:18px; color:var(--muted)}
+.next-part.open{color:inherit; border-color:var(--accent-bg)}
 .big-btn{font-size:17px; padding:11px 22px; text-decoration:none; display:inline-block}
 .stepnav{display:flex; align-items:center; gap:14px; position:sticky; bottom:0; padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px)); background:var(--bg); border-top:1px solid var(--line)}
 .stepnav .small{flex:1; text-align:center}

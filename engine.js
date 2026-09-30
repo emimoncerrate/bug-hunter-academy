@@ -567,4 +567,18 @@ BH.Editor = function(host, opts){
   this.setTab = n=>{ tab = n; render(); };
   render();
 };
+
+/* A small read-only picture of a few blocks, for word cards and tables. */
+BH.blockPic = function(lines){
+  const box = el('div', 'bpic'); box.setAttribute('aria-hidden', 'true');
+  const base = Math.min.apply(null, lines.map(l=>HAT[l.op] ? 0 : l.i));
+  lines.forEach(line=>{
+    const r = el('div', 'ln');
+    for(let k=0;k<(HAT[line.op]?0:line.i-base);k++) r.appendChild(el('span', 'guide'));
+    const b = el('div', 'blk blk-'+CAT[line.op] + (HAT[line.op]?' hat':''));
+    b.appendChild(renderLine(JSON.parse(JSON.stringify(line)), {readOnly:true, objects:[]}));
+    r.appendChild(b); box.appendChild(r);
+  });
+  return box;
+};
 })();

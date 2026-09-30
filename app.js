@@ -14,8 +14,10 @@ const gst = id => (P.games[id] = P.games[id] || {bugs:{}});
 
 /* ================================================================ content */
 const T = (en, es) => [en, es];
+const {L, P:POS, PO, C, TOUCH, KEY:KEYP} = BH.mk; // for the block pictures on word cards
 const SHOW_ARCADE = false; // flip to true to bring back the Bug Arcade
 const GAMES = SHOW_ARCADE ? BH.GAMES : [];
+const NEXT_PART = 'https://bug-squad-6gxr.onrender.com/'; // unlocked when the exit ticket is filled in
 const MODS = [
 { id:'start', num:0, nav:T('Start here','Empieza aquí'), short:T('The 4 steps','Los 4 pasos'),
   eyebrow:T('Mission 0','Misión 0'), title:T('Welcome, Bug Hunter','Hola, cazador de bugs'),
@@ -52,10 +54,10 @@ const MODS = [
   lead:T('Pushing a block to the right puts it INSIDE the block above it. Where a block sits decides WHEN it runs.','Mover un bloque a la derecha lo pone DENTRO del bloque de arriba. El lugar del bloque decide CUÁNDO corre.'),
   secs:[
     {t:'points', h:T('Learn','Aprende'), items:[
-      [T('Read top to bottom','Lee de arriba hacia abajo'), T('Blocks run in order, like steps in a recipe.','Los bloques corren en orden, como los pasos de una receta.')],
-      [T('Pushed right = inside','A la derecha = adentro'), T('A block under an if runs ONLY when the answer is yes.','Un bloque debajo de un if corre SOLO cuando la respuesta es sí.')],
-      [T('Inside forever = every frame','Dentro de forever = cada cuadro'), T('Outside forever, a block runs only ONCE, at the start. A game runs about 60 frames every second.','Fuera de forever, un bloque corre solo UNA vez, al empezar. Un juego corre unos 60 cuadros por segundo.')],
-      [T('if / else = two roads','if / else = dos caminos'), T('Every frame, exactly one road runs: the if part OR the else part.','En cada cuadro corre exactamente un camino: la parte if O la parte else.')]
+      [T('Read top to bottom','Lee de arriba hacia abajo'), T('Blocks run in order, like steps in a recipe.','Los bloques corren en orden, como los pasos de una receta.'), [L(0,'flag'), L(1,'goto',{x:-12,y:0}), L(1,'show')]],
+      [T('Pushed right = inside','A la derecha = adentro'), T('A block under an if runs ONLY when the answer is yes.','Un bloque debajo de un if corre SOLO cuando la respuesta es sí.'), [L(0,'if',{c:TOUCH('Cactus')}), L(1,'stop')]],
+      [T('Inside forever = every frame','Dentro de forever = cada cuadro'), T('Outside forever, a block runs only ONCE, at the start. A game runs about 60 frames every second.','Fuera de forever, un bloque corre solo UNA vez, al empezar. Un juego corre unos 60 cuadros por segundo.'), [L(0,'forever'), L(1,'change',{ax:'x',n:-0.3})]],
+      [T('if / else = two roads','if / else = dos caminos'), T('Every frame, exactly one road runs: the if part OR the else part.','En cada cuadro corre exactamente un camino: la parte if O la parte else.'), [L(0,'if',{c:KEYP('space')}), L(1,'change',{ax:'y',n:0.3}), L(0,'else'), L(1,'change',{ax:'y',n:-0.2})]]
     ]},
     {t:'code', h:T('Example: the Ground from Dino Run','Ejemplo: el Ground de Dino Run'), sprite:'Ground',
      code:[BH.mk.L(0,'flag'), BH.mk.L(1,'setvar',{v:'score',n:0}), BH.mk.L(1,'forever'), BH.mk.L(2,'change',{ax:'x',n:-0.3}), BH.mk.L(2,'if',{c:BH.mk.C('lt',BH.mk.P('x'),-32)}), BH.mk.L(3,'change',{ax:'x',n:32}), BH.mk.L(2,'changevar',{v:'score',n:0.2})],
@@ -81,11 +83,11 @@ const MODS = [
       [T('Left ←','Izquierda ←'), 'x', '−', T('the Ground slides: change x by -0.3','el suelo se desliza: change x by -0.3')],
       [T('Up ↑','Arriba ↑'), 'y', '+', T('the Dino jumps: change y by 0.3','el Dino salta: change y by 0.3')],
       [T('Down ↓','Abajo ↓'), 'y', '−', T('the Dino falls: change y by -0.2','el Dino cae: change y by -0.2')]
-     ]},
+     ], pics:[[L(0,'set',{ax:'x',n:20})], [L(0,'change',{ax:'x',n:-0.3})], [L(0,'change',{ax:'y',n:0.3})], [L(0,'change',{ax:'y',n:-0.2})]]},
     {t:'points', h:T('Remember','Recuerda'), items:[
-      [T('Horizontal = x','Horizontal = x'), T('x goes across, like the horizon.','x va de lado a lado, como el horizonte.')],
-      [T('Vertical = y','Vertical = y'), T('y goes up to the sky and down to the ground.','y sube al cielo y baja al suelo.')],
-      [T('change vs set','change o set'), T('change x by -0.3 moves a little every frame. set x to 20 jumps to exactly one spot.','change x by -0.3 mueve un poco en cada cuadro. set x to 20 salta a un solo lugar exacto.')]
+      [T('Horizontal = x','Horizontal = x'), T('x goes across, like the horizon.','x va de lado a lado, como el horizonte.'), [L(0,'change',{ax:'x',n:-0.3})]],
+      [T('Vertical = y','Vertical = y'), T('y goes up to the sky and down to the ground.','y sube al cielo y baja al suelo.'), [L(0,'change',{ax:'y',n:0.3})]],
+      [T('change vs set','change o set'), T('change x by -0.3 moves a little every frame. set x to 20 jumps to exactly one spot.','change x by -0.3 mueve un poco en cada cuadro. set x to 20 salta a un solo lugar exacto.'), [L(0,'change',{ax:'x',n:-0.3}), L(0,'set',{ax:'x',n:20})]]
     ]},
     {t:'try', key:'motion'},
     {t:'spot', key:'motion'},
@@ -99,9 +101,9 @@ const MODS = [
   lead:T('Operators ask yes-or-no questions about numbers. They tell the game when something reached an edge, a goal or a target.','Los operadores hacen preguntas de sí o no sobre números. Le dicen al juego cuándo algo llegó a un borde, a una meta o a un objetivo.'),
   secs:[
     {t:'points', h:T('Learn','Aprende'), items:[
-      [T('<  less than','<  menor que'), T('x position < -20 is YES when x is further left than -20.','x position < -20 es SÍ cuando x está más a la izquierda que -20.')],
-      [T('>  greater than','>  mayor que'), T('y position > 15 is YES when y is higher than 15.','y position > 15 es SÍ cuando y está más arriba que 15.')],
-      [T('=  exactly equal','=  exactamente igual'), T('YES only when the two numbers are exactly the same.','SÍ solo cuando los dos números son exactamente iguales.')]
+      [T('<  less than','<  menor que'), T('x position < -20 is YES when x is further left than -20.','x position < -20 es SÍ cuando x está más a la izquierda que -20.'), [L(0,'if',{c:C('lt',POS('x'),-20)})]],
+      [T('>  greater than','>  mayor que'), T('y position > 15 is YES when y is higher than 15.','y position > 15 es SÍ cuando y está más arriba que 15.'), [L(0,'if',{c:C('gt',POS('y'),15)})]],
+      [T('=  exactly equal','=  exactamente igual'), T('YES only when the two numbers are exactly the same.','SÍ solo cuando los dos números son exactamente iguales.'), [L(0,'if',{c:C('eq',POS('x'),18)})]]
     ]},
     {t:'table', h:T('Match the check to the direction','Une la pregunta con la dirección'),
      head:[T('Moving…','Si se mueve…'), T('Sign','Signo'), T('Edge check','Pregunta del borde')],
@@ -110,11 +112,11 @@ const MODS = [
       [T('Right →','Derecha →'), '+x', 'x position > 20'],
       [T('Up ↑','Arriba ↑'), '+y', 'y position > 15'],
       [T('Down ↓','Abajo ↓'), '−y', 'y position < -15']
-     ], frame:T('<b>Rule:</b> the sign of the move and the sign of the check must match.','<b>Regla:</b> el signo del movimiento y el signo de la pregunta deben coincidir.')},
+     ], pics:[[L(0,'if',{c:C('lt',POS('x'),-20)})], [L(0,'if',{c:C('gt',POS('x'),20)})], [L(0,'if',{c:C('gt',POS('y'),15)})], [L(0,'if',{c:C('lt',POS('y'),-15)})]], frame:T('<b>Rule:</b> the sign of the move and the sign of the check must match.','<b>Regla:</b> el signo del movimiento y el signo de la pregunta deben coincidir.')},
     {t:'numline', h:T('Why = is risky at an edge','Por qué = es riesgoso en un borde')},
     {t:'points', h:T('Chasing logic','La lógica de perseguir'), items:[
-      [T('Am I left of you?','¿Estoy a tu izquierda?'), T('if my x position < your x, I am on your LEFT. To chase you, I move + (right).','si mi x position < tu x, estoy a tu IZQUIERDA. Para perseguirte, me muevo + (derecha).')],
-      [T('Am I right of you?','¿Estoy a tu derecha?'), T('if my x position > your x, I am on your RIGHT. To chase you, I move − (left).','si mi x position > tu x, estoy a tu DERECHA. Para perseguirte, me muevo − (izquierda).')]
+      [T('Am I left of you?','¿Estoy a tu izquierda?'), T('if my x position < your x, I am on your LEFT. To chase you, I move + (right).','si mi x position < tu x, estoy a tu IZQUIERDA. Para perseguirte, me muevo + (derecha).'), [L(0,'if',{c:C('lt',POS('x'),PO('x','Hero'))}), L(1,'change',{ax:'x',n:0.12})]],
+      [T('Am I right of you?','¿Estoy a tu derecha?'), T('if my x position > your x, I am on your RIGHT. To chase you, I move − (left).','si mi x position > tu x, estoy a tu DERECHA. Para perseguirte, me muevo − (izquierda).'), [L(0,'if',{c:C('gt',POS('x'),PO('x','Hero'))}), L(1,'change',{ax:'x',n:-0.12})]]
     ]},
     {t:'try', key:'operators'},
     {t:'spot', key:'operators'},
@@ -128,10 +130,10 @@ const MODS = [
   lead:T('Sensing blocks notice things: keys that are pressed and objects that touch. Most game rules start with a sensing block.','Los bloques de sensores notan cosas: teclas presionadas y objetos que se tocan. Casi todas las reglas de un juego empiezan con un sensor.'),
   secs:[
     {t:'points', h:T('Learn','Aprende'), items:[
-      [T('Check inside forever','Revisa dentro de forever'), T('A touching check outside forever looks only once, at the start.','Una pregunta touching fuera de forever mira solo una vez, al empezar.')],
-      [T('Pick the right object','Elige el objeto correcto'), T('touching Ground? is not touching Dino?. Read the name.','touching Ground? no es touching Dino?. Lee el nombre.')],
-      [T('A collision needs a result','Un choque necesita un resultado'), T('Put something inside the if: stop all, change score, go to.','Pon algo dentro del if: stop all, change score, go to.')],
-      [T('Keys: two ways','Teclas: dos formas'), T('"when space key pressed" runs once per press. "key space pressed?" inside forever checks every frame while you hold the key.','"when space key pressed" corre una vez por cada toque. "key space pressed?" dentro de forever revisa cada cuadro mientras mantienes la tecla.')]
+      [T('Check inside forever','Revisa dentro de forever'), T('A touching check outside forever looks only once, at the start.','Una pregunta touching fuera de forever mira solo una vez, al empezar.'), [L(0,'forever'), L(1,'if',{c:TOUCH('Cactus')}), L(2,'stop')]],
+      [T('Pick the right object','Elige el objeto correcto'), T('touching Ground? is not touching Dino?. Read the name.','touching Ground? no es touching Dino?. Lee el nombre.'), [L(0,'if',{c:TOUCH('Ground')}), L(0,'if',{c:TOUCH('Dino')})]],
+      [T('A collision needs a result','Un choque necesita un resultado'), T('Put something inside the if: stop all, change score, go to.','Pon algo dentro del if: stop all, change score, go to.'), [L(0,'if',{c:TOUCH('Car')}), L(1,'stop')]],
+      [T('Keys: two ways','Teclas: dos formas'), T('"when space key pressed" runs once per press. "key space pressed?" inside forever checks every frame while you hold the key.','"when space key pressed" corre una vez por cada toque. "key space pressed?" dentro de forever revisa cada cuadro mientras mantienes la tecla.'), [L(0,'key',{k:'space'}), L(0,'if',{c:KEYP('space')})]]
     ]},
     {t:'try', key:'sensing'},
     {t:'spot', key:'sensing'},
@@ -320,7 +322,7 @@ function sayP(text, cls){ const p = el('p', cls||'say'); p.innerHTML = text; p.s
 
 function secPoints(sec){
   const s = secBox(tx(sec.h)); const g = el('div', 'points');
-  sec.items.forEach(it=>{ const d = el('div', 'point'); const b = el('b', null, tx(it[0])); b.setAttribute('data-say',''); d.appendChild(b); d.appendChild(sayP(tx(it[1]))); g.appendChild(d); });
+  sec.items.forEach(it=>{ const d = el('div', 'point'); const b = el('b', null, tx(it[0])); b.setAttribute('data-say',''); d.appendChild(b); d.appendChild(sayP(tx(it[1]))); if(it[2]) d.appendChild(BH.blockPic(it[2])); g.appendChild(d); });
   s.appendChild(g); if(sec.frame) s.appendChild(sayP(tx(sec.frame), 'frame')); return s;
 }
 function secVocab(sec){
@@ -331,7 +333,7 @@ function secVocab(sec){
 function secTable(sec){
   const s = secBox(tx(sec.h)); const w = el('div', 'tablewrap'); const t = el('table', 't');
   const hr = el('tr'); sec.head.forEach(h=>hr.appendChild(el('th', null, tx(h)))); t.appendChild(hr);
-  sec.rows.forEach(r=>{ const tr = el('tr'); r.forEach((c,i)=>{ const td = el('td'); if(typeof c==='string' && i>0){ td.appendChild(el('span','code',c)); } else td.textContent = tx(c); tr.appendChild(td); }); t.appendChild(tr); });
+  sec.rows.forEach((r,ri)=>{ const tr = el('tr'); r.forEach((c,i)=>{ const td = el('td'); if(typeof c==='string' && i>0){ td.appendChild(el('span','code',c)); } else td.textContent = tx(c); if(sec.pics && sec.pics[ri] && i===r.length-1) td.appendChild(BH.blockPic(sec.pics[ri])); tr.appendChild(td); }); t.appendChild(tr); });
   w.appendChild(t); s.appendChild(w); if(sec.frame) s.appendChild(sayP(tx(sec.frame), 'frame')); return s;
 }
 function secCode(sec){
@@ -425,6 +427,7 @@ function stepPoint(sec, it, i){
   s.appendChild(el('p', 'eyebrow', tx(sec.h) + ' · ' + (i+1) + ' / ' + sec.items.length));
   const h = el('h2', 'big-h', tx(it[0])); h.setAttribute('data-say',''); s.appendChild(h);
   s.appendChild(sayP(tx(it[1]), 'big-p'));
+  if(it[2]){ s.appendChild(el('p', 'pic-label', tx(['In the code:','En el código:']))); const pic = BH.blockPic(it[2]); pic.classList.add('big'); s.appendChild(pic); }
   if(sec.frame && i===sec.items.length-1) s.appendChild(sayP(tx(sec.frame), 'frame'));
   return s;
 }
@@ -724,7 +727,7 @@ function renderExit(){
     const f = el('div', 'field'); const id = 'exit' + i;
     const l = el('label', null, (i+1) + '. ' + tx(p)); l.htmlFor = id; l.setAttribute('data-say',''); f.appendChild(l);
     const ta = el('textarea'); ta.id = id; ta.value = P.exit['a'+i] || '';
-    ta.addEventListener('input', ()=>{ P.exit['a'+i] = ta.value; P.exit.done = [0,1,2].every(k=>(P.exit['a'+k]||'').trim().length>3); save(); renderRail(); });
+    ta.addEventListener('input', ()=>{ P.exit['a'+i] = ta.value; P.exit.done = [0,1,2].every(k=>(P.exit['a'+k]||'').trim().length>3); save(); renderRail(); drawNext(); });
     f.appendChild(ta); sec.appendChild(f);
   });
   sec.appendChild(el('p', 'small', tx(['Word bank: forever · inside · < · > · negative · positive · touching · x · y · every frame','Banco de palabras: forever · adentro · < · > · negativo · positivo · touching · x · y · cada cuadro'])));
@@ -744,6 +747,21 @@ function renderExit(){
     if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok, ()=>{ cp.textContent = tx(['Copy failed: select the text instead','No se pudo copiar: selecciona el texto']); });
   });
   pg.appendChild(cp);
+  const nextBox = el('section', 'sec next-part');
+  function drawNext(){
+    nextBox.innerHTML = '';
+    if(P.exit.done){
+      nextBox.classList.add('open');
+      nextBox.appendChild(sayP(tx(['Great work! The next part of the lesson is open.','¡Buen trabajo! La siguiente parte de la lección está abierta.']), 'big-p'));
+      const a = el('a', 'btn primary big-btn', tx(['Go to the next part →','Ir a la siguiente parte →']));
+      a.href = NEXT_PART; a.target = '_blank'; a.rel = 'noopener'; nextBox.appendChild(a);
+    } else {
+      nextBox.classList.remove('open');
+      const p = sayP(tx(['Answer all 3 sentences to unlock the next part of the lesson.','Contesta las 3 oraciones para desbloquear la siguiente parte de la lección.']));
+      p.insertAdjacentHTML('afterbegin', LOCK + ' '); nextBox.appendChild(p);
+    }
+  }
+  drawNext(); pg.appendChild(nextBox);
   return pg;
 }
 
