@@ -404,6 +404,7 @@ BH.Editor = function(host, opts){
   let tab = opts.tab || opts.names[0];
   const undo = [];
   const STEP = 34; // px per indent level: guide width + margin
+  const GUT = 30;  // px for the line number column (.lnum width + margin)
   const ctx = {
     readOnly: !!opts.readOnly,
     objects: opts.objects || opts.names,
@@ -499,13 +500,13 @@ BH.Editor = function(host, opts){
     const prev = pk>=0 ? L[pk] : null;
     if(!prev){ d.mark.hidden = true; d.target = null; return; }
     const hi = Math.max(1, maxIndent(prev));
-    const want = Math.round((ev.clientX - d.ox - lr.left - 4) / STEP);
+    const want = Math.round((ev.clientX - d.ox - lr.left - 4 - GUT) / STEP);
     const lvl = Math.max(1, Math.min(hi, want));
     d.target = {at, lvl};
     let y;
     let nk = at; while(nk<rows.length && skip(nk)) nk++;
     if(nk < rows.length) y = rows[nk].offsetTop; else { const lastRow = rows[pk]; y = lastRow.offsetTop + lastRow.offsetHeight; }
-    d.mark.hidden = false; d.mark.style.top = (y - 2) + 'px'; d.mark.style.left = (4 + lvl*STEP) + 'px';
+    d.mark.hidden = false; d.mark.style.top = (y - 2) + 'px'; d.mark.style.left = (4 + GUT + lvl*STEP) + 'px';
   }
   function finish(ev, cancelled){
     const d = drag; drag = null;
@@ -547,6 +548,7 @@ BH.Editor = function(host, opts){
     L.forEach((line, idx)=>{
       const r = el('div', 'ln');
       if(HAT[line.op] && idx>0) r.classList.add('ln-gap');
+      r.appendChild(el('span', 'lnum', idx+1));
       for(let k=0;k<(HAT[line.op]?0:line.i);k++) r.appendChild(el('span', 'guide'));
       const b = el('div', 'blk blk-'+CAT[line.op] + (HAT[line.op]?' hat':''));
       b.appendChild(renderLine(line, ctx));
@@ -572,8 +574,9 @@ BH.Editor = function(host, opts){
 BH.blockPic = function(lines){
   const box = el('div', 'bpic'); box.setAttribute('aria-hidden', 'true');
   const base = Math.min.apply(null, lines.map(l=>HAT[l.op] ? 0 : l.i));
-  lines.forEach(line=>{
+  lines.forEach((line, idx)=>{
     const r = el('div', 'ln');
+    r.appendChild(el('span', 'lnum', idx+1));
     for(let k=0;k<(HAT[line.op]?0:line.i-base);k++) r.appendChild(el('span', 'guide'));
     const b = el('div', 'blk blk-'+CAT[line.op] + (HAT[line.op]?' hat':''));
     b.appendChild(renderLine(JSON.parse(JSON.stringify(line)), {readOnly:true, objects:[]}));
