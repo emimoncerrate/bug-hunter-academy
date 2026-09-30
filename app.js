@@ -5,7 +5,7 @@ const $ = s => document.querySelector(s);
 
 /* ================================================================ progress */
 const KEY = 'bug-hunter-academy.v1';
-let P = {mods:{}, games:{}, sandbox:{}, exit:{}, lang:'en', unlockAll:false};
+let P = {mods:{}, games:{}, sandbox:{}, lang:'en', unlockAll:false};
 try{ const s = JSON.parse(localStorage.getItem(KEY)||'null'); if(s) P = Object.assign(P, s); }catch(e){}
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
 BH.lang = P.lang || 'en';
@@ -17,7 +17,7 @@ const T = (en, es) => [en, es];
 const {L, P:POS, PO, C, TOUCH, KEY:KEYP} = BH.mk; // for the block pictures on word cards
 const SHOW_ARCADE = false; // flip to true to bring back the Bug Arcade
 const GAMES = SHOW_ARCADE ? BH.GAMES : [];
-const NEXT_PART = 'https://bug-squad-6gxr.onrender.com/'; // unlocked when the exit ticket is filled in
+const NEXT_PART = 'https://bug-squad-6gxr.onrender.com/'; // the arcade games, shown when training is finished
 const MODS = [
 { id:'start', num:0, nav:T('Start here','Empieza aquí'), short:T('The 4 steps','Los 4 pasos'),
   eyebrow:T('Mission 0','Misión 0'), title:T('Welcome, Bug Hunter','Hola, cazador de bugs'),
@@ -213,7 +213,6 @@ function renderRail(){
   BH.GAMES.forEach(g=> r.appendChild(navItem('game-'+g.id, g.title, tx(g.tier==='must'?['Must-do','Obligatorio']:['Challenge','Reto']), gameDone(g)?'done':(gameOpen(g)?'open':'locked'), g.num)));
   }
   r.appendChild(el('h4', null, tx(['Finish','Final'])));
-  r.appendChild(navItem('exit', tx(['Exit ticket','Boleto de salida']), tx(['3 sentences','3 oraciones']), P.exit.done?'done':(arcadeOpen()?'open':'locked'), '✎'));
   const d = el('details', 'teacher'); d.appendChild(el('summary', null, tx(['For teachers','Para maestros'])));
   if(!teacherOK){ d.appendChild(teacherLogin(d)); r.appendChild(d); return; }
   const row = el('div', 'row');
@@ -221,7 +220,7 @@ function renderRail(){
   u.addEventListener('click', ()=>{ P.unlockAll = !P.unlockAll; save(); renderRail(); route(); });
   const rs = el('button', 'btn', tx(['Reset progress','Borrar progreso'])); rs.type='button';
   let armed = false;
-  rs.addEventListener('click', ()=>{ if(!armed){ armed = true; rs.textContent = tx(['Click again to erase','Haz clic otra vez para borrar']); return; } P = {mods:{}, games:{}, sandbox:{}, exit:{}, lang:BH.lang, unlockAll:false}; save(); location.hash = 'start'; renderRail(); route(); updateMeter(); });
+  rs.addEventListener('click', ()=>{ if(!armed){ armed = true; rs.textContent = tx(['Click again to erase','Haz clic otra vez para borrar']); return; } P = {mods:{}, games:{}, sandbox:{}, lang:BH.lang, unlockAll:false}; save(); location.hash = 'start'; renderRail(); route(); updateMeter(); });
   row.appendChild(u); row.appendChild(rs); d.appendChild(row);
   d.appendChild(el('p', 'small', tx(['Progress is saved in this browser only.','El progreso se guarda solo en este navegador.'])));
   r.appendChild(d);
@@ -507,9 +506,12 @@ function doneStep(m){
   box.insertAdjacentHTML('beforeend', '<svg width="64" height="64" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="3" width="24" height="24" rx="7" fill="#7FE0C0"/><path d="M9 15.5l4 4 8-9" stroke="#1B1830" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
   const h = el('h2', 'big-h', tx(['Mission complete!','¡Misión cumplida!'])); h.setAttribute('data-say',''); box.appendChild(h);
   const next = i < MODS.length-1 ? MODS[i+1] : null;
-  box.appendChild(sayP(next ? tx(['Next mission: ','Siguiente misión: ']) + tx(next.nav) + '.' : (SHOW_ARCADE ? tx(['You finished training. The Bug Arcade is open!','Terminaste el entrenamiento. ¡El Arcade de bugs está abierto!']) : tx(['You finished training. Now fill out your exit ticket.','Terminaste el entrenamiento. Ahora llena tu boleto de salida.'])), 'big-p'));
-  const a = el('a', 'btn primary big-btn', next ? tx(['Start ','Empezar ']) + tx(next.nav) + ' →' : (SHOW_ARCADE ? tx(['Open the Bug Arcade →','Abrir el Arcade de bugs →']) : tx(['Exit ticket →','Boleto de salida →'])));
-  a.href = '#' + (next ? next.id : (SHOW_ARCADE ? 'arcade' : 'exit')); box.appendChild(a);
+  box.appendChild(sayP(next ? tx(['Next mission: ','Siguiente misión: ']) + tx(next.nav) + '.' : tx(['You finished training. The arcade games are open!','Terminaste el entrenamiento. ¡Los juegos de arcade están abiertos!']), 'big-p'));
+  const a = el('a', 'btn primary big-btn', next ? tx(['Start ','Empezar ']) + tx(next.nav) + ' →' : tx(['Go to the arcade games →','Ir a los juegos de arcade →']));
+  if(next) a.href = '#' + next.id;
+  else if(SHOW_ARCADE) a.href = '#arcade';
+  else { a.href = NEXT_PART; a.target = '_blank'; a.rel = 'noopener'; }
+  box.appendChild(a);
   return box;
 }
 function buildSteps(m){
@@ -537,8 +539,12 @@ function buildSteps(m){
   steps.push({kind:T('Finish','Final'), render:()=>doneStep(m)});
   return steps;
 }
-let refreshStep = null;
-function afterProgress(m){ checkModDone(m); if(refreshStep) refreshStep(); }
+let refreshStep = null, goEnd = null;
+function afterProgress(m){
+  const justDone = checkModDone(m); if(refreshStep) refreshStep();
+  // Finishing the last mission goes straight to the screen with the arcade link.
+  if(justDone && m.id===MOD_IDS[MOD_IDS.length-1] && goEnd){ const go = goEnd; setTimeout(()=>{ if(goEnd===go) go(); }, 1500); }
+}
 function pageHead(eyebrow, title, lead){
   const h = el('div', 'page-h');
   const e = el('p', 'eyebrow', eyebrow); h.appendChild(e);
@@ -603,6 +609,7 @@ function renderModule(m){
   back.addEventListener('click', ()=>{ if(cur>0) show(cur-1); });
   next.addEventListener('click', ()=>{ if(cur<steps.length-1 && canLeave(cur)) show(cur+1); });
   refreshStep = ()=>{ paint(); if(cur===steps.length-1) show(cur); };
+  goEnd = ()=>show(steps.length-1);
   show(cur);
   return pg;
 }
@@ -690,8 +697,8 @@ function renderGame(g){
     if(all){
       doneBox.appendChild(el('b', null, tx(['All 3 bugs fixed!','¡Los 3 bugs arreglados!'])));
       const nx = BH.GAMES.find(x=>x.num===g.num+1);
-      const a = el('a', 'btn primary', nx ? tx(['Next game: ','Siguiente juego: ']) + nx.title + ' →' : tx(['Exit ticket →','Boleto de salida →']));
-      a.href = '#' + (nx ? 'game-'+nx.id : 'exit'); doneBox.appendChild(a);
+      const a = el('a', 'btn primary', nx ? tx(['Next game: ','Siguiente juego: ']) + nx.title + ' →' : tx(['Back to the arcade →','Volver al arcade →']));
+      a.href = '#' + (nx ? 'game-'+nx.id : 'arcade'); doneBox.appendChild(a);
     }
   }
   function checkBugs(){
@@ -715,69 +722,16 @@ function renderGame(g){
   checkBugs(); renderReports();
   return pg;
 }
-function renderExit(){
-  if(!arcadeOpen()) return lockedPage();
-  const pg = el('div', 'page');
-  pg.appendChild(pageHead(tx(['Exit ticket','Boleto de salida']), tx(['Finish the sentences','Termina las oraciones']), tx(['Write, or use the words from the lesson. Your answers stay on this computer.','Escribe o usa las palabras de la lección. Tus respuestas se quedan en esta computadora.'])));
-  const sec = el('section', 'sec');
-  const prompts = [
-    T('Moving LEFT uses ___ x. To check the LEFT edge, I use ___.','Moverse a la IZQUIERDA usa ___ x. Para revisar el borde IZQUIERDO uso ___.'),
-    T('A collision check must be inside ___ because ___.','La pregunta de choque debe estar dentro de ___ porque ___.'),
-    T('The hardest bug was ___. I found it by ___.','El bug más difícil fue ___. Lo encontré ___.')
-  ];
-  prompts.forEach((p, i)=>{
-    const f = el('div', 'field'); const id = 'exit' + i;
-    const l = el('label', null, (i+1) + '. ' + tx(p)); l.htmlFor = id; l.setAttribute('data-say',''); f.appendChild(l);
-    const ta = el('textarea'); ta.id = id; ta.value = P.exit['a'+i] || '';
-    ta.addEventListener('input', ()=>{ P.exit['a'+i] = ta.value; P.exit.done = [0,1,2].every(k=>(P.exit['a'+k]||'').trim().length>3); save(); renderRail(); drawNext(); });
-    f.appendChild(ta); sec.appendChild(f);
-  });
-  sec.appendChild(el('p', 'small', tx(['Word bank: forever · inside · < · > · negative · positive · touching · x · y · every frame','Banco de palabras: forever · adentro · < · > · negativo · positivo · touching · x · y · cada cuadro'])));
-  pg.appendChild(sec);
-  const mods = MODS.filter(m=>modDone(m.id)).length;
-  let bugs = 0, st = 0; GAMES.forEach(g=>{ const s = P.games[g.id]; if(s) g.bugs.forEach(b=>{ const x = s.bugs[b.id]; if(x && x.st==='done'){ bugs++; st += x.stars||0; } }); });
-  const badge = el('div', 'badge');
-  badge.insertAdjacentHTML('beforeend', '<svg width="72" height="72" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="3" width="24" height="24" rx="7" fill="#7FE0C0"/><circle cx="15" cy="16" r="6" fill="#1B1830"/><path d="M9 9l3 3M21 9l-3 3M7 16h2M21 16h2M9 23l3-2M21 23l-3-2" stroke="#1B1830" stroke-width="2" stroke-linecap="round"/></svg>');
-  const bt = el('div'); bt.appendChild(el('div', 'big', tx(['Bug Hunter','Cazador de bugs'])));
-  bt.appendChild(el('p', null, tx(['Missions: ','Misiones: ']) + mods + '/' + MODS.length + (SHOW_ARCADE ? ' · ' + tx(['Bugs fixed: ','Bugs arreglados: ']) + bugs + '/15 · ★ ' + st + '/45' : '')));
-  bt.appendChild(el('p', null, tx(['Show this screen to your teacher.','Muéstrale esta pantalla a tu maestro.'])));
-  badge.appendChild(bt); pg.appendChild(badge);
-  const cp = el('button', 'btn', tx(['Copy my answers','Copiar mis respuestas'])); cp.type='button';
-  cp.addEventListener('click', ()=>{
-    const t = prompts.map((p,i)=>(i+1)+'. '+tx(p)+'\n'+(P.exit['a'+i]||'')).join('\n\n') + '\n\nMissions ' + mods + '/' + MODS.length + (SHOW_ARCADE ? ' · Bugs ' + bugs + '/15 · Stars ' + st + '/45' : '');
-    const ok = ()=>{ cp.textContent = tx(['Copied','Copiado']); };
-    if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok, ()=>{ cp.textContent = tx(['Copy failed: select the text instead','No se pudo copiar: selecciona el texto']); });
-  });
-  pg.appendChild(cp);
-  const nextBox = el('section', 'sec next-part');
-  function drawNext(){
-    nextBox.innerHTML = '';
-    if(P.exit.done){
-      nextBox.classList.add('open');
-      nextBox.appendChild(sayP(tx(['Great work! The next part of the lesson is open.','¡Buen trabajo! La siguiente parte de la lección está abierta.']), 'big-p'));
-      const a = el('a', 'btn primary big-btn', tx(['Go to the next part →','Ir a la siguiente parte →']));
-      a.href = NEXT_PART; a.target = '_blank'; a.rel = 'noopener'; nextBox.appendChild(a);
-    } else {
-      nextBox.classList.remove('open');
-      const p = sayP(tx(['Answer all 3 sentences to unlock the next part of the lesson.','Contesta las 3 oraciones para desbloquear la siguiente parte de la lección.']));
-      p.insertAdjacentHTML('afterbegin', LOCK + ' '); nextBox.appendChild(p);
-    }
-  }
-  drawNext(); pg.appendChild(nextBox);
-  return pg;
-}
-
 /* ================================================================ router */
 function route(){
   const id = location.hash.slice(1) || 'start';
-  ACTIVE = null; stopSpeech(); refreshStep = null;
+  ACTIVE = null; stopSpeech(); refreshStep = null; goEnd = null;
   const main = $('#main'); main.innerHTML = '';
   let node;
   const m = MODS.find(x=>x.id===id);
   if(m) node = renderModule(m);
   else if(SHOW_ARCADE && id==='arcade') node = renderArcade();
   else if(SHOW_ARCADE && id.startsWith('game-')){ const g = BH.GAMES.find(x=>'game-'+x.id===id); node = g ? renderGame(g) : renderModule(MODS[0]); }
-  else if(id==='exit') node = renderExit();
   else node = renderModule(MODS[0]);
   main.appendChild(node);
   renderRail(); updateMeter();
