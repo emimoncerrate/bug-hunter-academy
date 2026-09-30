@@ -405,7 +405,9 @@ function secTry(sec, m){
   const code = P.sandbox[sec.key] || (P.sandbox[sec.key] = JSON.parse(JSON.stringify(sb.code)));
   const goalBox = el('div', 'goal'); box.appendChild(goalBox);
   const reset = el('button', 'btn', tx(['Start over','Empezar de nuevo'])); reset.type='button';
-  function goalIdx(){ let i = 0; while(i < sb.goals.length && sb.goals[i].ok(code)) i++; return i; }
+  // Goals are reached one after another and remembered: in Motion the same block is changed for each goal,
+  // so an earlier goal (go up) is no longer true once the next one (go left) is done.
+  function goalIdx(){ let i = s.goalAt || 0; while(i < sb.goals.length && sb.goals[i].ok(code)) i++; if(i !== (s.goalAt||0)){ s.goalAt = i; save(); } return i; }
   function showGoal(){
     const i = goalIdx(); goalBox.innerHTML = '';
     const req = sb.goals.filter(g=>!g.optional).length;
@@ -417,7 +419,7 @@ function secTry(sec, m){
   const hostDiv = el('div'); box.appendChild(hostDiv);
   new Playground(hostDiv, {def:sb, code, onChange(){ save(); showGoal(); }});
   const row = el('div', 'row'); row.appendChild(reset); box.appendChild(row);
-  reset.addEventListener('click', ()=>{ P.sandbox[sec.key] = JSON.parse(JSON.stringify(sb.code)); save(); route(); });
+  reset.addEventListener('click', ()=>{ P.sandbox[sec.key] = JSON.parse(JSON.stringify(sb.code)); s.goalAt = 0; save(); route(); });
   showGoal();
   return box;
 }
