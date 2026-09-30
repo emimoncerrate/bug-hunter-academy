@@ -14,10 +14,12 @@ const gst = id => (P.games[id] = P.games[id] || {bugs:{}});
 
 /* ================================================================ content */
 const T = (en, es) => [en, es];
+const SHOW_ARCADE = false; // flip to true to bring back the Bug Arcade
+const GAMES = SHOW_ARCADE ? BH.GAMES : [];
 const MODS = [
 { id:'start', num:0, nav:T('Start here','Empieza aquí'), short:T('The 4 steps','Los 4 pasos'),
   eyebrow:T('Mission 0','Misión 0'), title:T('Welcome, Bug Hunter','Hola, cazador de bugs'),
-  lead:T('Games break. Programmers fix them. First you learn 4 debugging skills. Then you fix 5 broken arcade games.','Los juegos se rompen. Los programadores los arreglan. Primero vas a aprender 4 habilidades para depurar. Luego vas a arreglar 5 juegos de arcade rotos.'),
+  lead:T('Games break. Programmers fix them. First you learn 4 debugging skills.' + (SHOW_ARCADE ? ' Then you fix 5 broken arcade games.' : ''),'Los juegos se rompen. Los programadores los arreglan. Primero vas a aprender 4 habilidades para depurar.' + (SHOW_ARCADE ? ' Luego vas a arreglar 5 juegos de arcade rotos.' : '')),
   secs:[
     {t:'vocab', h:T('Key words','Palabras clave'), items:[
       ['bug','error',T('A mistake in the code.','Un error en el código.')],
@@ -164,9 +166,9 @@ function checkModDone(m){
 
 /* ================================================================ shell */
 function updateMeter(){
-  const total = MODS.length + BH.GAMES.reduce((a,g)=>a+g.bugs.length,0);
+  const total = MODS.length + GAMES.reduce((a,g)=>a+g.bugs.length,0);
   let got = MODS.filter(m=>modDone(m.id)).length;
-  BH.GAMES.forEach(g=>{ const s = P.games[g.id]; if(s) g.bugs.forEach(b=>{ if(s.bugs[b.id] && s.bugs[b.id].st==='done') got++; }); });
+  GAMES.forEach(g=>{ const s = P.games[g.id]; if(s) g.bugs.forEach(b=>{ if(s.bugs[b.id] && s.bugs[b.id].st==='done') got++; }); });
   const pct = Math.round(got/total*100);
   $('#meterTxt').textContent = pct + '%'; $('#meterBar').style.width = pct + '%';
 }
@@ -185,9 +187,11 @@ function renderRail(){
   const r = $('#rail'); r.innerHTML = '';
   r.appendChild(el('h4', null, tx(['Training','Entrenamiento'])));
   MODS.forEach((m,i)=> r.appendChild(navItem(m.id, tx(m.nav), tx(m.short), modDone(m.id)?'done':(modOpen(i)?'open':'locked'), m.num)));
+  if(SHOW_ARCADE){
   r.appendChild(el('h4', null, tx(['Bug Arcade','Arcade de bugs'])));
   r.appendChild(navItem('arcade', tx(['All games','Todos los juegos']), tx(['5 broken games','5 juegos rotos']), BH.GAMES.every(gameDone)?'done':(arcadeOpen()?'open':'locked'), '★'));
   BH.GAMES.forEach(g=> r.appendChild(navItem('game-'+g.id, g.title, tx(g.tier==='must'?['Must-do','Obligatorio']:['Challenge','Reto']), gameDone(g)?'done':(gameOpen(g)?'open':'locked'), g.num)));
+  }
   r.appendChild(el('h4', null, tx(['Finish','Final'])));
   r.appendChild(navItem('exit', tx(['Exit ticket','Boleto de salida']), tx(['3 sentences','3 oraciones']), P.exit.done?'done':(arcadeOpen()?'open':'locked'), '✎'));
   const d = el('details', 'teacher'); d.appendChild(el('summary', null, tx(['For teachers','Para maestros'])));
@@ -479,9 +483,9 @@ function doneStep(m){
   box.insertAdjacentHTML('beforeend', '<svg width="64" height="64" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="3" width="24" height="24" rx="7" fill="#7FE0C0"/><path d="M9 15.5l4 4 8-9" stroke="#1B1830" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
   const h = el('h2', 'big-h', tx(['Mission complete!','¡Misión cumplida!'])); h.setAttribute('data-say',''); box.appendChild(h);
   const next = i < MODS.length-1 ? MODS[i+1] : null;
-  box.appendChild(sayP(next ? tx(['Next mission: ','Siguiente misión: ']) + tx(next.nav) + '.' : tx(['You finished training. The Bug Arcade is open!','Terminaste el entrenamiento. ¡El Arcade de bugs está abierto!']), 'big-p'));
-  const a = el('a', 'btn primary big-btn', next ? tx(['Start ','Empezar ']) + tx(next.nav) + ' →' : tx(['Open the Bug Arcade →','Abrir el Arcade de bugs →']));
-  a.href = '#' + (next ? next.id : 'arcade'); box.appendChild(a);
+  box.appendChild(sayP(next ? tx(['Next mission: ','Siguiente misión: ']) + tx(next.nav) + '.' : (SHOW_ARCADE ? tx(['You finished training. The Bug Arcade is open!','Terminaste el entrenamiento. ¡El Arcade de bugs está abierto!']) : tx(['You finished training. Now fill out your exit ticket.','Terminaste el entrenamiento. Ahora llena tu boleto de salida.'])), 'big-p'));
+  const a = el('a', 'btn primary big-btn', next ? tx(['Start ','Empezar ']) + tx(next.nav) + ' →' : (SHOW_ARCADE ? tx(['Open the Bug Arcade →','Abrir el Arcade de bugs →']) : tx(['Exit ticket →','Boleto de salida →'])));
+  a.href = '#' + (next ? next.id : (SHOW_ARCADE ? 'arcade' : 'exit')); box.appendChild(a);
   return box;
 }
 function buildSteps(m){
@@ -707,16 +711,16 @@ function renderExit(){
   sec.appendChild(el('p', 'small', tx(['Word bank: forever · inside · < · > · negative · positive · touching · x · y · every frame','Banco de palabras: forever · adentro · < · > · negativo · positivo · touching · x · y · cada cuadro'])));
   pg.appendChild(sec);
   const mods = MODS.filter(m=>modDone(m.id)).length;
-  let bugs = 0, st = 0; BH.GAMES.forEach(g=>{ const s = P.games[g.id]; if(s) g.bugs.forEach(b=>{ const x = s.bugs[b.id]; if(x && x.st==='done'){ bugs++; st += x.stars||0; } }); });
+  let bugs = 0, st = 0; GAMES.forEach(g=>{ const s = P.games[g.id]; if(s) g.bugs.forEach(b=>{ const x = s.bugs[b.id]; if(x && x.st==='done'){ bugs++; st += x.stars||0; } }); });
   const badge = el('div', 'badge');
   badge.insertAdjacentHTML('beforeend', '<svg width="72" height="72" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="3" width="24" height="24" rx="7" fill="#7FE0C0"/><circle cx="15" cy="16" r="6" fill="#1B1830"/><path d="M9 9l3 3M21 9l-3 3M7 16h2M21 16h2M9 23l3-2M21 23l-3-2" stroke="#1B1830" stroke-width="2" stroke-linecap="round"/></svg>');
   const bt = el('div'); bt.appendChild(el('div', 'big', tx(['Bug Hunter','Cazador de bugs'])));
-  bt.appendChild(el('p', null, tx(['Missions: ','Misiones: ']) + mods + '/5 · ' + tx(['Bugs fixed: ','Bugs arreglados: ']) + bugs + '/15 · ★ ' + st + '/45'));
+  bt.appendChild(el('p', null, tx(['Missions: ','Misiones: ']) + mods + '/' + MODS.length + (SHOW_ARCADE ? ' · ' + tx(['Bugs fixed: ','Bugs arreglados: ']) + bugs + '/15 · ★ ' + st + '/45' : '')));
   bt.appendChild(el('p', null, tx(['Show this screen to your teacher.','Muéstrale esta pantalla a tu maestro.'])));
   badge.appendChild(bt); pg.appendChild(badge);
   const cp = el('button', 'btn', tx(['Copy my answers','Copiar mis respuestas'])); cp.type='button';
   cp.addEventListener('click', ()=>{
-    const t = prompts.map((p,i)=>(i+1)+'. '+tx(p)+'\n'+(P.exit['a'+i]||'')).join('\n\n') + '\n\nMissions ' + mods + '/5 · Bugs ' + bugs + '/15 · Stars ' + st + '/45';
+    const t = prompts.map((p,i)=>(i+1)+'. '+tx(p)+'\n'+(P.exit['a'+i]||'')).join('\n\n') + '\n\nMissions ' + mods + '/' + MODS.length + (SHOW_ARCADE ? ' · Bugs ' + bugs + '/15 · Stars ' + st + '/45' : '');
     const ok = ()=>{ cp.textContent = tx(['Copied','Copiado']); };
     if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok, ()=>{ cp.textContent = tx(['Copy failed: select the text instead','No se pudo copiar: selecciona el texto']); });
   });
@@ -732,8 +736,8 @@ function route(){
   let node;
   const m = MODS.find(x=>x.id===id);
   if(m) node = renderModule(m);
-  else if(id==='arcade') node = renderArcade();
-  else if(id.startsWith('game-')){ const g = BH.GAMES.find(x=>'game-'+x.id===id); node = g ? renderGame(g) : renderModule(MODS[0]); }
+  else if(SHOW_ARCADE && id==='arcade') node = renderArcade();
+  else if(SHOW_ARCADE && id.startsWith('game-')){ const g = BH.GAMES.find(x=>'game-'+x.id===id); node = g ? renderGame(g) : renderModule(MODS[0]); }
   else if(id==='exit') node = renderExit();
   else node = renderModule(MODS[0]);
   main.appendChild(node);
